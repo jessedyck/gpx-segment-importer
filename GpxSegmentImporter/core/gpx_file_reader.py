@@ -137,7 +137,7 @@ class GpxFileReader:
                             self.add_attributes(attributes, prev_track_point, 'a_')
                             self.add_attributes(attributes, track_point, 'b_')
 
-                        # Adds the the 'type' value from the parent trk to each trkseg
+                        # Adds the the 'type' value from the parent trk to each trkpt
                         attributes['type'] = trackType
 
                         if calculate_motion_attributes:
