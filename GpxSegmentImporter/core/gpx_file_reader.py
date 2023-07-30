@@ -1,6 +1,6 @@
 # Initialize Qt resources from file resources.py
 from xml.etree import ElementTree
-from qgis.core import (QgsPoint, QgsCoordinateReferenceSystem)
+from qgis.core import (QgsPoint, QgsCoordinateReferenceSystem, QgsMessageLog)
 from .datatype_definition import (DataTypeDefinition, DataTypes)
 from .gpx_feature_builder import GpxFeatureBuilder
 from .geom_tools import GeomTools
@@ -59,6 +59,7 @@ class GpxFileReader:
             self.get_table_data(file_path)
 
         self.error_message = ''
+        # self.did_log = False
 
         if calculate_motion_attributes:
             self.attribute_definitions.append(DataTypeDefinition('_a_index', DataTypes.Integer, True, ''))
@@ -67,6 +68,9 @@ class GpxFileReader:
             self.attribute_definitions.append(DataTypeDefinition('_duration', DataTypes.Double, True, ''))
             self.attribute_definitions.append(DataTypeDefinition('_speed', DataTypes.Double, True, ''))
             self.attribute_definitions.append(DataTypeDefinition('_elevation_diff', DataTypes.Double, True, ''))
+
+        # Add attribute field for track type
+        self.attribute_definitions.append(DataTypeDefinition('type', DataTypes.String, True, ''))
 
         tree = ElementTree.parse(file_path)
         root = tree.getroot()
@@ -83,6 +87,16 @@ class GpxFileReader:
 
         for track in root.findall('gpx:trk', self.namespace):
             self.track_count += 1
+
+            # Extract the the 'type' value from the parent trk
+            trackType = None
+            trackTypeList = track.findall('gpx:type', self.namespace)
+            if len(trackTypeList) != 0 :
+                trackType = trackTypeList[0].text
+
+            # if self.did_log is False:
+            #     QgsMessageLog.logMessage( trackType, 'GPX Segment Importer' )
+            #     self.did_log = True
 
             for track_segment in track.findall('gpx:trkseg', self.namespace):
                 self.track_segment_count += 1
@@ -122,6 +136,9 @@ class GpxFileReader:
                         elif attribute_select == 'Both':
                             self.add_attributes(attributes, prev_track_point, 'a_')
                             self.add_attributes(attributes, track_point, 'b_')
+
+                        # Adds the the 'type' value from the parent trk to each trkseg
+                        attributes['type'] = trackType
 
                         if calculate_motion_attributes:
                             attributes['_a_index'] = prev_track_point_index
